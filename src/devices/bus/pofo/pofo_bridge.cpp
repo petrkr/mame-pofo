@@ -58,6 +58,13 @@ void pofo_bridge_device::device_start()
 	save_item(NAME(m_port_a_in));
 	save_item(NAME(m_port_c_in));
 
+	m_slot->iospace().install_read_tap(0x807f, 0x807f, "pofo_bridge_id",
+		[] (offs_t offset, u8 &data, u8) { data = 0x02; });
+
+	m_ppi_tap = m_slot->iospace().install_readwrite_tap(0x8078, 0x807b, "pofo_bridge_ppi",
+		[this] (offs_t offset, u8 &data, u8) { data = m_ppi->read(offset & 0x03); },
+		[this] (offs_t offset, u8 &data, u8) { m_ppi->write(offset & 0x03, data); }, &m_ppi_tap);
+
 	open_listen_socket();
 
 	m_poll_timer = timer_alloc(FUNC(pofo_bridge_device::poll_socket), this);
@@ -77,32 +84,6 @@ void pofo_bridge_device::device_stop()
 void pofo_bridge_device::device_reset()
 {
 	m_ppi->reset();
-}
-
-uint8_t pofo_bridge_device::nrdi_r(offs_t offset, uint8_t data, bool iom, bool bcom, bool ncc1)
-{
-	// Same address decode as a real HPC-101 (see hpc101.cpp) - the PPI
-	// occupies offset bits [3:2]==0b10 within the card's I/O window, with
-	// an identification byte 0x02 at offset bits [3:0]==0xf.
-	if (!bcom)
-	{
-		if ((offset & 0x0f) == 0x0f)
-			data = 0x02;
-
-		if ((offset & 0x0c) == 0x08)
-			data = m_ppi->read(offset & 0x03);
-	}
-
-	return data;
-}
-
-void pofo_bridge_device::nwri_w(offs_t offset, uint8_t data, bool iom, bool bcom, bool ncc1)
-{
-	if (!bcom)
-	{
-		if ((offset & 0x0c) == 0x08)
-			m_ppi->write(offset & 0x03, data);
-	}
 }
 
 uint8_t pofo_bridge_device::data_in_r()

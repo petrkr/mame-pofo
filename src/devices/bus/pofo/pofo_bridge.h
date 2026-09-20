@@ -55,9 +55,6 @@ protected:
 	// same override real HPC-101 makes, see hpc101.cpp).
 	bool pdet() override { return 1; }
 
-	virtual uint8_t nrdi_r(offs_t offset, uint8_t data, bool iom, bool bcom, bool ncc1) override;
-	virtual void nwri_w(offs_t offset, uint8_t data, bool iom, bool bcom, bool ncc1) override;
-
 private:
 	// Wire protocol: {register_id, value} byte pairs, either direction.
 	// register_id selects which i8255 port the byte applies to - PORT_A
@@ -85,6 +82,7 @@ private:
 	void close_client();
 
 	required_device<i8255_device> m_ppi;
+	memory_passthrough_handler m_ppi_tap;
 
 	emu_timer *m_poll_timer;
 

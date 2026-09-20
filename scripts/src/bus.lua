@@ -4730,6 +4730,8 @@ if BUSES["POFO"] then
 		MAME_DIR .. "src/devices/bus/pofo/hpc102.h",
 		MAME_DIR .. "src/devices/bus/pofo/hpc104.cpp",
 		MAME_DIR .. "src/devices/bus/pofo/hpc104.h",
+		MAME_DIR .. "src/devices/bus/pofo/pofo_bridge.cpp",
+		MAME_DIR .. "src/devices/bus/pofo/pofo_bridge.h",
 		MAME_DIR .. "src/devices/bus/pofo/ccm.cpp",
 		MAME_DIR .. "src/devices/bus/pofo/ccm.h",
 		MAME_DIR .. "src/devices/bus/pofo/ram.cpp",

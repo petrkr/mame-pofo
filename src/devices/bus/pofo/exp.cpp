@@ -90,6 +90,7 @@ void portfolio_expansion_slot_device::device_reset()
 #include "hpc101.h"
 #include "hpc102.h"
 #include "hpc104.h"
+#include "pofo_smartcable.h"
 
 void portfolio_expansion_cards(device_slot_interface &device)
 {
@@ -97,4 +98,5 @@ void portfolio_expansion_cards(device_slot_interface &device)
 	device.option_add("uart", POFO_HPC102);
 	device.option_add("ram",  POFO_HPC104);
 	device.option_add("ram2", POFO_HPC104_2);
+	device.option_add("pofo_smartcable", POFO_SMARTCABLE);
 }

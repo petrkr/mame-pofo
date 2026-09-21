@@ -38,9 +38,6 @@ protected:
 
 	bool pdet() override { return 1; }
 
-	virtual uint8_t nrdi_r(offs_t offset, uint8_t data, bool iom, bool bcom, bool ncc1) override;
-	virtual void nwri_w(offs_t offset, uint8_t data, bool iom, bool bcom, bool ncc1) override;
-
 private:
 	uint8_t data_in_r();
 	void data_out_w(uint8_t data);
@@ -48,6 +45,7 @@ private:
 	void status_out_w(uint8_t data);
 
 	required_device<i8255_device> m_ppi;
+	memory_passthrough_handler m_ppi_tap;
 
 	uint8_t m_port_c_in;
 };

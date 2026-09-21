@@ -27,7 +27,7 @@ enum wire_reg : uint8_t
 };
 }
 
-DEFINE_DEVICE_TYPE(POFO_SMARTCABLE, pofo_smartcable_device, "pofo_smartcable", "POFOSCAB Smart Cable Byte-Level Bridge")
+DEFINE_DEVICE_TYPE(POFO_SMARTCABLE, pofo_smartcable_device, "smartcable", "Atari Portfolio Smart Cable Bridge")
 
 pofo_smartcable_device::pofo_smartcable_device(const machine_config &mconfig, const char *tag, device_t *owner, uint32_t clock)
 	: device_t(mconfig, POFO_SMARTCABLE, tag, owner, clock)

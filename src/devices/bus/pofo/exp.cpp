@@ -91,6 +91,7 @@ void portfolio_expansion_slot_device::device_reset()
 #include "hpc102.h"
 #include "hpc104.h"
 #include "pofo_bridge.h"
+#include "pofo_loopback.h"
 
 void portfolio_expansion_cards(device_slot_interface &device)
 {
@@ -99,4 +100,5 @@ void portfolio_expansion_cards(device_slot_interface &device)
 	device.option_add("ram",  POFO_HPC104);
 	device.option_add("ram2", POFO_HPC104_2);
 	device.option_add("pofo_bridge", POFO_BRIDGE);
+	device.option_add("pofo_loopback", POFO_LOOPBACK);
 }

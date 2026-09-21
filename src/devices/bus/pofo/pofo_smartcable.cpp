@@ -196,6 +196,18 @@ void pofo_smartcable_device::close_client()
 	// request byte so the next client's first byte isn't misread as the
 	// second half of a stale {reg, value} pair.
 	m_recv_have_partial = false;
+
+	// Also abandon any in-flight op - a new client (e.g. the bridge
+	// reconnecting after this one dropped) must start from a clean
+	// IDLE state, not have step()'s timer still ticking down toward a
+	// finish_op() that would send_reply() into a *different* client's
+	// reply stream (or into a closed fd - send_reply() itself no-ops
+	// when m_client_fd < 0, but by then the new client may already have
+	// connected and set it).
+	m_op = op_kind::NONE;
+	m_phase = phase::IDLE;
+	if (m_step_timer)
+		m_step_timer->adjust(attotime::never);
 }
 
 TIMER_CALLBACK_MEMBER(pofo_smartcable_device::poll_socket)
@@ -226,16 +238,30 @@ void pofo_smartcable_device::drain_socket()
 				uint8_t value = byte;
 				m_recv_have_partial = false;
 
-				// Ignore new requests while an op is already in flight -
-				// the client is expected to wait for the reply before
-				// issuing the next request (one outstanding op at a time).
-				if (m_op == op_kind::NONE)
+				// A new request while an op is still in flight means the
+				// client already gave up on it (its own timeout fired)
+				// and moved on - normal after a missed/garbled handshake
+				// retry. Silently abandon the stale op instead of letting
+				// it run to its own deadline: if left alone, it would
+				// eventually send a reply the client no longer expects,
+				// permanently shifting the reply stream out of sync with
+				// requests for the rest of the TCP connection (the client
+				// has no way to tell that reply apart from the one for
+				// the request it just sent). Abandoning it here never
+				// sends a reply for it, so nothing is left to misalign
+				// later replies - only ever start_send()/start_receive()
+				// scheduled below.
+				if (m_op != op_kind::NONE)
 				{
-					if (reg == REQ_SEND)
-						start_send(value);
-					else if (reg == REQ_RECEIVE)
-						start_receive();
+					m_op = op_kind::NONE;
+					m_phase = phase::IDLE;
+					m_step_timer->adjust(attotime::never);
 				}
+
+				if (reg == REQ_SEND)
+					start_send(value);
+				else if (reg == REQ_RECEIVE)
+					start_receive();
 			}
 			continue;
 		}

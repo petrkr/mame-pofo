@@ -248,12 +248,12 @@ void pofo_smartcable_device::drain_socket()
 	}
 }
 
-void pofo_smartcable_device::send_reply(uint8_t reg, uint8_t value)
+void pofo_smartcable_device::send_reply(uint8_t reg, uint8_t ok, uint8_t value)
 {
 	if (m_client_fd < 0)
 		return;
 
-	uint8_t buf[2] = { reg, value };
+	uint8_t buf[3] = { reg, ok, value };
 	send(m_client_fd, buf, sizeof(buf), MSG_NOSIGNAL);
 }
 
@@ -282,9 +282,9 @@ void pofo_smartcable_device::start_receive()
 void pofo_smartcable_device::finish_op(bool ok, uint8_t received_byte)
 {
 	if (m_op == op_kind::SEND)
-		send_reply(REPLY_SEND, ok ? 1 : 0);
+		send_reply(REPLY_SEND, ok ? 1 : 0, 0);
 	else if (m_op == op_kind::RECEIVE)
-		send_reply(REPLY_RECV, ok ? received_byte : 0xff);
+		send_reply(REPLY_RECV, ok ? 1 : 0, received_byte);
 
 	m_op = op_kind::NONE;
 	m_phase = phase::IDLE;

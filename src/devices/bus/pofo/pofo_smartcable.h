@@ -8,17 +8,11 @@
     no checksum) in C++ as a non-blocking state machine, and exposes it
     over TCP at whole-byte granularity:
 
-        client -> device: {0x01, byte}       send this byte
-        device -> client: {0x81, ok}         send result (1=ok, 0=timeout)
-        client -> device: {0x02, 0x00}       receive a byte
-        device -> client: {0x82, byte_or_ff} received byte, or 0xff on
-                                              timeout (0xff is otherwise
-                                              a valid byte value, but the
-                                              client only issues one
-                                              receive request at a time
-                                              and reads this synchronously,
-                                              so the ambiguity doesn't
-                                              matter here)
+        client -> device: {0x01, byte}        send this byte
+        device -> client: {0x81, ok, 0}       send result (ok: 1=sent, 0=timeout)
+        client -> device: {0x02, 0x00}        receive a byte
+        device -> client: {0x82, ok, byte}    received byte (ok: 1=valid,
+                                               0=timeout, byte undefined)
 
     Checksum, block framing, and the file-transfer application protocol
     are left to the client - only the electrical bit-toggling happens
@@ -84,7 +78,7 @@ private:
 	void accept_pending();
 	void drain_socket();
 	void close_client();
-	void send_reply(uint8_t reg, uint8_t value);
+	void send_reply(uint8_t reg, uint8_t ok, uint8_t value);
 
 	void start_send(uint8_t byte_to_send);
 	void start_receive();

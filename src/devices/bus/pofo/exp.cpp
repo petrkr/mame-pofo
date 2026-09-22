@@ -90,11 +90,8 @@ void portfolio_expansion_slot_device::device_reset()
 #include "hpc101.h"
 #include "hpc102.h"
 #include "hpc104.h"
-<<<<<<< HEAD
 #include "pofo_smartcable.h"
-=======
 #include "pofo_bridge.h"
->>>>>>> 3b4806e1f6c (Portfolio: Added SmartCable LPT bridge emulator)
 
 void portfolio_expansion_cards(device_slot_interface &device)
 {

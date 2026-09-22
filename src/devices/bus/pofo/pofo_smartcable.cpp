@@ -22,8 +22,13 @@ enum wire_reg : uint8_t
 {
 	REQ_SEND    = 0x01,
 	REQ_RECEIVE = 0x02,
+	REQ_WATCH_PORT_C = 0x03,
+	REQ_CANCEL = 0x04,
 	REPLY_SEND  = 0x81,
 	REPLY_RECV  = 0x82,
+	REPLY_WATCH_PORT_C = 0x83,
+	EVENT_PORT_C = 0x84,
+	REPLY_CANCEL = 0x85,
 };
 }
 
@@ -37,6 +42,7 @@ pofo_smartcable_device::pofo_smartcable_device(const machine_config &mconfig, co
 	, m_step_timer(nullptr)
 	, m_port_a_out(0)
 	, m_port_c_in(0xff)
+	, m_port_c_events(false)
 	, m_delay_deadline(attotime::zero)
 	, m_op(op_kind::NONE)
 	, m_phase(phase::IDLE)
@@ -68,6 +74,7 @@ void pofo_smartcable_device::device_start()
 {
 	save_item(NAME(m_port_a_out));
 	save_item(NAME(m_port_c_in));
+	save_item(NAME(m_port_c_events));
 
 	m_slot->iospace().install_read_tap(0x807f, 0x807f, "pofo_smartcable_id",
 		[] (offs_t offset, u8 &data, u8) { data = 0x02; });
@@ -128,7 +135,10 @@ uint8_t pofo_smartcable_device::status_in_r()
 // directly (never m_ppi) to sample the ROM's side of the handshake.
 void pofo_smartcable_device::status_out_w(uint8_t data)
 {
+	bool changed = m_port_c_in != data;
 	m_port_c_in = data;
+	if (changed && m_port_c_events && m_op == op_kind::NONE)
+		send_reply(EVENT_PORT_C, 0, data);
 }
 
 void pofo_smartcable_device::open_listen_socket()
@@ -196,6 +206,7 @@ void pofo_smartcable_device::close_client()
 	// request byte so the next client's first byte isn't misread as the
 	// second half of a stale {reg, value} pair.
 	m_recv_have_partial = false;
+	m_port_c_events = false;
 
 	// Also abandon any in-flight op - a new client (e.g. the bridge
 	// reconnecting after this one dropped) must start from a clean
@@ -237,6 +248,28 @@ void pofo_smartcable_device::drain_socket()
 				uint8_t reg = m_recv_partial;
 				uint8_t value = byte;
 				m_recv_have_partial = false;
+
+				// Opt-in asynchronous notification for a server peer.  It is
+				// deliberately handled before the normal request cancellation
+				// path: enabling/disabling notifications must not abort an
+				// in-flight byte operation.
+				if (reg == REQ_WATCH_PORT_C)
+				{
+					m_port_c_events = value != 0;
+					send_reply(REPLY_WATCH_PORT_C, 1, m_port_c_in);
+					continue;
+				}
+				if (reg == REQ_CANCEL)
+				{
+					if (m_op != op_kind::NONE)
+					{
+						m_op = op_kind::NONE;
+						m_phase = phase::IDLE;
+						m_step_timer->adjust(attotime::never);
+					}
+					send_reply(REPLY_CANCEL, 1, 0);
+					continue;
+				}
 
 				// A new request while an op is still in flight means the
 				// client already gave up on it (its own timeout fired)

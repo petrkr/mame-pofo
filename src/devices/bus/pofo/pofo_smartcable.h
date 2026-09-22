@@ -13,6 +13,14 @@
         client -> device: {0x02, 0x00}        receive a byte
         device -> client: {0x82, ok, byte}    received byte (ok: 1=valid,
                                                0=timeout, byte undefined)
+        client -> device: {0x03, enabled}     enable/disable idle Port C events
+        device -> client: {0x83, 1, value}    event subscription result
+        device -> client: {0x84, 0, value}    unsolicited changed Port C value
+        client -> device: {0x04, 0x00}        cancel an in-flight byte operation
+        device -> client: {0x85, 1, 0}        cancellation complete
+
+    Port C events are opt-in and are emitted only while no SEND/RECEIVE
+    byte operation is in flight.  Existing clients never receive them.
 
     Checksum, block framing, and the file-transfer application protocol
     are left to the client - only the electrical bit-toggling happens
@@ -95,6 +103,7 @@ private:
 	// step() only ever reads this cached value, never m_ppi directly.
 	uint8_t m_port_a_out;
 	uint8_t m_port_c_in;
+	bool m_port_c_events;
 
 	// Deadline for the SEND_DELAY/RECV_DELAY startup pause. Waiting on an
 	// absolute clock LEVEL (not an edge relative to some captured
